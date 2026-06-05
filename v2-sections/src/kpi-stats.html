@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KPI — Stats</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="kpi-style.css">
+</head>
+<body>
+  <div class="stat-grid">
+    <div class="card">
+      <div class="stat-label">Lane Miles</div>
+      <div class="stat-value" id="v-lm">—</div>
+      <div class="stat-change" id="c-lm"></div>
+    </div>
+    <div class="card">
+      <div class="stat-label">Active Equipment</div>
+      <div class="stat-value" id="v-eq">—</div>
+      <div class="stat-change" id="c-eq"></div>
+    </div>
+    <div class="card">
+      <div class="stat-label">Weekly Reports</div>
+      <div class="stat-value" id="v-rp">—</div>
+      <div class="stat-change" id="c-rp"></div>
+    </div>
+    <div class="card">
+      <div class="stat-label">Monthly Active Users</div>
+      <div class="stat-value" id="v-mau">—</div>
+      <div class="stat-change" id="c-mau"></div>
+    </div>
+  </div>
+
+  <script src="kpi-data.js"></script>
+  <script>
+    function fmt(n) { return n == null ? '—' : n.toLocaleString(); }
+    function pct(a, b) {
+      if (!b) return null;
+      return ((a - b) / b * 100).toFixed(1);
+    }
+    function renderStat(valId, changeId, cur, prev) {
+      document.getElementById(valId).textContent = fmt(cur);
+      const el = document.getElementById(changeId);
+      const p = pct(cur, prev);
+      if (p === null) return;
+      const up = parseFloat(p) >= 0;
+      el.className = 'stat-change ' + (up ? 'up' : 'down');
+      el.innerHTML = (up ? '↑' : '↓') + ' ' + Math.abs(p) + '% <span class="change-sub">vs prev week</span>';
+    }
+
+    const last = RAW[RAW.length - 1];
+    const prev = RAW[RAW.length - 2];
+    renderStat('v-lm', 'c-lm', last[1], prev[1]);
+    renderStat('v-eq', 'c-eq', last[2], prev[2]);
+    renderStat('v-rp', 'c-rp', last[5], prev[5]);
+
+    let mauCur = null, mauPrev = null;
+    for (let i = RAW.length - 1; i >= 0; i--) {
+      if (RAW[i][8] !== null) {
+        if (mauCur === null) mauCur = RAW[i][8];
+        else { mauPrev = RAW[i][8]; break; }
+      }
+    }
+    renderStat('v-mau', 'c-mau', mauCur, mauPrev);
+  </script>
+</body>
+</html>

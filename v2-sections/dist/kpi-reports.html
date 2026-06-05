@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KPI — Reports & Equipment</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+  <style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --surface:  #FFFFFF;
+  --border:   #E5E7EB;
+  --text:     #111827;
+  --muted:    #6B7280;
+  --faint:    #9CA3AF;
+  --rule:     #F3F4F6;
+  --blue:     #1D4ED8;
+  --green:    #059669;
+  --red:      #DC2626;
+  --amber:    #D97706;
+  --indigo:   #4F46E5;
+  --cyan:     #0891B2;
+  --pink:     #DB2777;
+  --violet:   #7C3AED;
+  --emerald:  #10B981;
+  --radius:   10px;
+  --shadow:   0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+}
+
+body {
+  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #ffffff;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 14px 16px;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow);
+}
+
+/* Stat cards */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.stat-label {
+  font-size: 11px; font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.6px;
+  margin-bottom: 6px;
+}
+.stat-value {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 24px; font-weight: 500;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.stat-change { font-size: 12px; font-weight: 500; }
+.stat-change.up   { color: var(--green); }
+.stat-change.down { color: var(--red); }
+.change-sub { color: var(--faint); font-weight: 400; }
+
+/* Chart cards */
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px 10px;
+  box-shadow: var(--shadow);
+}
+.chart-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chart-title { font-size: 13px; font-weight: 600; }
+.legend { display: flex; gap: 10px; flex-wrap: wrap; }
+.legend-item {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; color: var(--muted);
+}
+.dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* Annual */
+.section-label {
+  font-size: 11px; font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.6px;
+  margin-bottom: 8px;
+}
+.annual-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.annual-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  box-shadow: var(--shadow);
+}
+.annual-year { font-size: 11px; color: var(--muted); font-weight: 500; margin-bottom: 4px; }
+.annual-val  {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 17px; font-weight: 500; margin-bottom: 8px;
+}
+.bar-bg  { height: 3px; background: var(--rule); border-radius: 2px; overflow: hidden; margin-bottom: 5px; }
+.bar-fill { height: 100%; background: var(--blue); border-radius: 2px; }
+.annual-growth { font-size: 11px; font-weight: 500; color: var(--green); }
+.annual-base   { font-size: 11px; color: var(--faint); }
+
+/* Chart.js shared options injected via JS */
+.gap { height: 10px; }
+
+@media (max-width: 600px) {
+  .stat-grid    { grid-template-columns: repeat(2, 1fr); }
+  .two-col      { grid-template-columns: 1fr; }
+  .annual-grid  { grid-template-columns: repeat(2, 1fr); }
+}
+
+</style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="two-col">
+    <div class="chart-card">
+      <div class="chart-head">
+        <div class="chart-title">Weekly Reports</div>
+        <div class="legend">
+          <div class="legend-item"><div class="dot" style="background:var(--emerald)"></div>Automated</div>
+          <div class="legend-item"><div class="dot" style="background:var(--amber)"></div>Manual</div>
+        </div>
+      </div>
+      <div style="position:relative;height:200px"><canvas id="rpChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-head">
+        <div class="chart-title">Active Equipment</div>
+        <div class="legend">
+          <div class="legend-item"><div class="dot" style="background:var(--indigo)"></div>Units active</div>
+        </div>
+      </div>
+      <div style="position:relative;height:200px"><canvas id="eqChart"></canvas></div>
+    </div>
+  </div>
+
+  <script>
+// Auto-generated by tools/refresh.py — do not edit manually
+// [date, volumeIndex, activeUnits, typeA, typeB, total, app, web, monthlyActive]
+const RAW = [
+  ["Jan 7 '26", 94, 99, 64, 24, 88, null, null, null],
+  ["Jan 14 '26", 91, 98, 62, 23, 85, null, null, null],
+  ["Jan 21 '26", 88, 97, 60, 22, 82, null, null, null],
+  ["Jan 28 '26", 85, 95, 57, 21, 78, 36, 44, 55],
+  ["Feb 4 '26", 81, 93, 54, 19, 73, 35, 43, 54],
+  ["Feb 11 '26", 78, 91, 51, 18, 69, 34, 42, 53],
+  ["Feb 18 '26", 74, 89, 48, 17, 65, 33, 40, 51],
+  ["Feb 25 '26", 70, 87, 45, 16, 61, 31, 38, 48],
+  ["Mar 4 '26", 66, 85, 42, 14, 56, 30, 37, 46],
+  ["Mar 11 '26", 61, 82, 39, 13, 52, 28, 35, 44],
+  ["Mar 18 '26", 55, 78, 35, 11, 46, 27, 33, 42],
+  ["Mar 25 '26", 51, 74, 32, 10, 42, 25, 31, 39],
+  ["Apr 1 '26", 47, 71, 29, 9, 38, 23, 29, 36],
+  ["Apr 8 '26", 42, 66, 26, 8, 34, 21, 26, 33],
+  ["Apr 15 '26", 38, 61, 24, 7, 31, 19, 24, 30],
+  ["Apr 22 '26", 31, 57, 21, 5, 26, 18, 23, 28],
+  ["Apr 29 '26", 29, 52, 18, 4, 22, 16, 21, 25],
+  ["May 6 '26", 23, 45, 14, 6, 20, 15, 19, 23],
+  ["May 13 '26", 21, 48, 20, 5, 25, 14, 18, 21],
+  ["May 20 '26", 18, 52, 21, 6, 27, 14, 17, 20],
+  ["May 27 '26", 15, 42, 19, 4, 23, 13, 17, 19],
+  ["Jun 3 '26", 2, 24, 6, 1, 7, 12, 14, 17],
+];
+
+</script>
+  <script>
+    const TICK   = { color: '#9CA3AF', font: { size: 11, family: "'IBM Plex Sans', sans-serif" } };
+    const labels = RAW.map(r => r[0]);
+    const TT = {
+      backgroundColor: '#1F2937', titleColor: '#F3F4F6', bodyColor: '#D1D5DB',
+      borderColor: '#374151', borderWidth: 1, padding: 10, cornerRadius: 6,
+      callbacks: { label: ctx => ctx.raw == null ? null : ` ${ctx.dataset.label}: ${ctx.raw.toLocaleString()}` }
+    };
+
+    // Reports — stacked bar
+    new Chart(document.getElementById('rpChart'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Automated', data: RAW.map(r => r[3]),
+            backgroundColor: 'rgba(16,185,129,0.75)', borderWidth: 0,
+            borderRadius: { topLeft:0, topRight:0, bottomLeft:2, bottomRight:2 }, borderSkipped: false },
+          { label: 'Manual', data: RAW.map(r => r[4]),
+            backgroundColor: 'rgba(245,158,11,0.75)', borderWidth: 0,
+            borderRadius: { topLeft:2, topRight:2, bottomLeft:0, bottomRight:0 }, borderSkipped: false }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { display: false }, tooltip: TT },
+        scales: {
+          x: { stacked: true, grid: { display: false }, border: { display: false },
+               ticks: { ...TICK, maxTicksLimit: 8, maxRotation: 0 } },
+          y: { stacked: true, grid: { color: '#F0F1F3' }, border: { display: false }, ticks: TICK }
+        }
+      }
+    });
+
+    // Equipment — line
+    const eqCtx  = document.getElementById('eqChart').getContext('2d');
+    const eqGrad = eqCtx.createLinearGradient(0, 0, 0, 280);
+    eqGrad.addColorStop(0, 'rgba(79,70,229,0.12)');
+    eqGrad.addColorStop(1, 'rgba(79,70,229,0)');
+
+    new Chart(eqCtx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Equipment', data: RAW.map(r => r[2]),
+          borderColor: '#4F46E5', borderWidth: 2,
+          backgroundColor: eqGrad, fill: true, tension: 0.35,
+          pointRadius: 0, pointHoverRadius: 5,
+          pointHoverBackgroundColor: '#4F46E5', pointHoverBorderColor: '#fff', pointHoverBorderWidth: 2,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { display: false }, tooltip: TT },
+        scales: {
+          x: { grid: { display: false }, border: { display: false },
+               ticks: { ...TICK, maxTicksLimit: 8, maxRotation: 0 } },
+          y: { grid: { color: '#F0F1F3' }, border: { display: false }, ticks: TICK }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

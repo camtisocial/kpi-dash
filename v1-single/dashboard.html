@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SRO User KPIs</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #F7F8FA;
+      --surface:  #FFFFFF;
+      --border:   #E5E7EB;
+      --text:     #111827;
+      --muted:    #6B7280;
+      --faint:    #9CA3AF;
+      --rule:     #F3F4F6;
+      --blue:     #1D4ED8;
+      --blue-bg:  #EFF6FF;
+      --green:    #059669;
+      --red:      #DC2626;
+      --amber:    #D97706;
+      --indigo:   #4F46E5;
+      --cyan:     #0891B2;
+      --pink:     #DB2777;
+      --violet:   #7C3AED;
+      --emerald:  #10B981;
+      --radius:   10px;
+      --shadow:   0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    }
+
+    body {
+      font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.5;
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .brand-badge {
+      width: 38px; height: 38px;
+      background: var(--blue);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.8px;
+      flex-shrink: 0;
+    }
+    .header-title   { font-size: 18px; font-weight: 600; line-height: 1.2; }
+    .header-sub     { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    /* ── Stat cards ── */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      box-shadow: var(--shadow);
+    }
+    .stat-label {
+      font-size: 11px; font-weight: 500;
+      color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.6px;
+      margin-bottom: 8px;
+    }
+    .stat-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 26px; font-weight: 500;
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    .stat-change {
+      font-size: 12px; font-weight: 500;
+      display: flex; align-items: center; gap: 3px;
+    }
+    .stat-change.up   { color: var(--green); }
+    .stat-change.down { color: var(--red); }
+    .change-sub { color: var(--faint); font-weight: 400; }
+
+    /* ── Chart cards ── */
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px 14px;
+      box-shadow: var(--shadow);
+    }
+    .chart-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .chart-title { font-size: 13px; font-weight: 600; }
+    .legend {
+      display: flex; gap: 12px; flex-wrap: wrap;
+    }
+    .legend-item {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11px; color: var(--muted);
+    }
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%; flex-shrink: 0;
+    }
+
+    .chart-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .gap { height: 12px; }
+
+    /* ── Annual section ── */
+    .section-label {
+      font-size: 11px; font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.6px;
+      margin-bottom: 10px;
+    }
+    .annual-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    .annual-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      box-shadow: var(--shadow);
+    }
+    .annual-year  { font-size: 11px; color: var(--muted); font-weight: 500; margin-bottom: 5px; }
+    .annual-val   {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 18px; font-weight: 500;
+      margin-bottom: 10px;
+    }
+    .bar-bg {
+      height: 3px; background: var(--rule); border-radius: 2px;
+      overflow: hidden; margin-bottom: 7px;
+    }
+    .bar-fill { height: 100%; background: var(--blue); border-radius: 2px; }
+    .annual-growth { font-size: 11px; font-weight: 500; color: var(--green); }
+    .annual-base   { font-size: 11px; color: var(--faint); }
+
+    @media (max-width: 700px) {
+      .stat-grid    { grid-template-columns: repeat(2, 1fr); }
+      .chart-row    { grid-template-columns: 1fr; }
+      .annual-grid  { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="brand-badge">SRO</div>
+    <div>
+      <div class="header-title">User KPIs</div>
+      <div class="header-sub">Weekly operational metrics &nbsp;·&nbsp; Updated Jun 3, 2026</div>
+    </div>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-label">Lane Miles</div>
+      <div class="stat-value" id="v-lm">—</div>
+      <div class="stat-change" id="c-lm"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Active Equipment</div>
+      <div class="stat-value" id="v-eq">—</div>
+      <div class="stat-change" id="c-eq"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Weekly Reports</div>
+      <div class="stat-value" id="v-rp">—</div>
+      <div class="stat-change" id="c-rp"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Monthly Active Users</div>
+      <div class="stat-value" id="v-mau">—</div>
+      <div class="stat-change" id="c-mau"></div>
+    </div>
+  </div>
+
+  <!-- Lane Miles -->
+  <div class="chart-card">
+    <div class="chart-head">
+      <div class="chart-title">Weekly Lane Miles</div>
+      <div class="legend">
+        <div class="legend-item"><div class="dot" style="background:var(--blue)"></div>Lane miles processed</div>
+      </div>
+    </div>
+    <canvas id="lmChart" height="85"></canvas>
+  </div>
+
+  <div class="gap"></div>
+
+  <!-- Reports + Equipment -->
+  <div class="chart-row">
+    <div class="chart-card">
+      <div class="chart-head">
+        <div class="chart-title">Weekly Reports</div>
+        <div class="legend">
+          <div class="legend-item"><div class="dot" style="background:var(--emerald)"></div>Automated</div>
+          <div class="legend-item"><div class="dot" style="background:var(--amber)"></div>Manual</div>
+        </div>
+      </div>
+      <canvas id="rpChart" height="140"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-head">
+        <div class="chart-title">Active Equipment</div>
+        <div class="legend">
+          <div class="legend-item"><div class="dot" style="background:var(--indigo)"></div>Units active</div>
+        </div>
+      </div>
+      <canvas id="eqChart" height="140"></canvas>
+    </div>
+  </div>
+
+  <div class="gap"></div>
+
+  <!-- Users -->
+  <div class="chart-card">
+    <div class="chart-head">
+      <div class="chart-title">Platform Users</div>
+      <div class="legend">
+        <div class="legend-item"><div class="dot" style="background:var(--violet)"></div>MAU</div>
+        <div class="legend-item"><div class="dot" style="background:var(--cyan)"></div>Web</div>
+        <div class="legend-item"><div class="dot" style="background:var(--pink)"></div>Mobile</div>
+      </div>
+    </div>
+    <canvas id="usChart" height="85"></canvas>
+  </div>
+
+  <div class="gap"></div>
+  <div class="gap"></div>
+
+  <!-- Annual -->
+  <div class="section-label">Annual Lane Miles</div>
+  <div class="annual-grid">
+    <div class="annual-card">
+      <div class="annual-year">2021</div>
+      <div class="annual-val">118,432</div>
+      <div class="bar-bg"><div class="bar-fill" style="width:38%"></div></div>
+      <div class="annual-base">Baseline year</div>
+    </div>
+    <div class="annual-card">
+      <div class="annual-year">2022</div>
+      <div class="annual-val">193,667</div>
+      <div class="bar-bg"><div class="bar-fill" style="width:65%"></div></div>
+      <div class="annual-growth">+64% YoY</div>
+    </div>
+    <div class="annual-card">
+      <div class="annual-year">2023</div>
+      <div class="annual-val">251,840</div>
+      <div class="bar-bg"><div class="bar-fill" style="width:83%"></div></div>
+      <div class="annual-growth">+30% YoY</div>
+    </div>
+    <div class="annual-card">
+      <div class="annual-year">2024</div>
+      <div class="annual-val">308,119</div>
+      <div class="bar-bg"><div class="bar-fill" style="width:100%"></div></div>
+      <div class="annual-growth">+22% YoY</div>
+    </div>
+  </div>
+
+<script>
+// ── Dataset ──────────────────────────────────────────────────────────────────
+// [date, laneMiles, equipment, automated, manual, total, mobile, web, mau]
+// null = not recorded that week
+const RAW = [
+  ["Jan 14 '25", 890, 322, 106, 47, 153, 21, 150, 169],
+  ["Jan 21 '25", 1618, 412, 122, 87, 209, 19, 131, 146],
+  ["Jan 28 '25", 1221, 350, 128, 45, 173, 23, 163, 201],
+  ["Feb 4 '25", 1202, 416, 154, 65, 219, 17, 176, 181],
+  ["Feb 11 '25", 1435, 439, 173, 61, 234, 16, 210, 191],
+  ["Feb 18 '25", 1054, 384, 124, 63, 187, 15, 176, 158],
+  ["Feb 25 '25", 4083, 327, 99, 54, 153, 14, 152, 167],
+  ["Mar 3 '25", 2027, 458, 185, 40, 225, 27, 152, 171],
+  ["Mar 11 '25", 1473, 467, 148, 67, 215, 30, 176, 195],
+  ["Mar 18 '25", 1985, 527, 198, 50, 248, 25, 155, 174],
+  ["Mar 25 '25", 2085, 566, 198, 58, 256, 31, 175, 217],
+  ["Apr 1 '25", 2657, 541, 206, 81, 287, 27, 191, 223],
+  ["Apr 15 '25", 3683, 566, 270, 152, 422, 21, 194, 205],
+  ["Apr 22 '25", 5319, 681, 313, 158, 471, 24, 247, 239],
+  ["Apr 29 '25", 6111, 691, 238, 165, 403, 25, 239, 237],
+  ["May 6 '25", 8109, 684, 320, 108, 428, 29, 276, 258],
+  ["May 13 '25", 9989, 753, 423, 95, 518, 31, 274, 290],
+  ["May 20 '25", 13055, 864, 398, 176, 574, 36, 252, 289],
+  ["May 27 '25", 9813, 916, 424, 205, 629, 35, 255, 319],
+  ["Jun 3 '25", 14812, 741, 359, 296, 655, 41, 330, 314],
+  ["Jun 17 '25", 20510, 912, 508, 391, 899, 39, 338, 378],
+  ["Jun 24 '25", 19447, 861, 463, 370, 833, 45, 345, 375],
+  ["Jul 1 '25", 19950, 897, 549, 399, 948, 40, 331, 342],
+  ["Jul 8 '25", 15080, 846, 517, 338, 855, 31, 303, 341],
+  ["Jul 15 '25", 19184, 852, 511, 333, 844, 33, 336, 351],
+  ["Jul 22 '25", 19125, 952, 556, 351, 907, 33, 333, 343],
+  ["Jul 29 '25", 24557, 963, 542, 364, 906, 35, 305, 314],
+  ["Aug 5 '25", 22189, 1030, 498, 319, 817, 41, 297, 344],
+  ["Aug 12 '25", 24427, 938, 614, 332, 946, 43, 340, 359],
+  ["Aug 19 '25", 21581, 1032, 533, 369, 902, 35, 319, 375],
+  ["Aug 26 '25", 41652, 1089, 533, 280, 813, 38, 365, 352],
+  ["Sep 2 '25", 19569, 971, 502, 344, 846, 35, 338, 364],
+  ["Sep 9 '25", 13984, 1009, 437, 248, 685, 33, 363, 322],
+  ["Sep 16 '25", 18438, 1048, 539, 324, 863, 32, 359, 333],
+  ["Sep 23 '25", 18914, 1058, 548, 326, 874, 36, 354, 326],
+  ["Sep 30 '25", 16165, 960, 457, 288, 745, 31, 304, 342],
+  ["Oct 7 '25", 15395, 983, 559, 260, 819, 34, 305, 326],
+  ["Oct 14 '25", 14071, 1049, 498, 255, 753, 33, 326, 337],
+  ["Oct 21 '25", 27490, 1018, 478, 152, 630, 37, 296, 334],
+  ["Oct 28 '25", 10628, 882, 420, 177, 597, 29, 296, 322],
+  ["Nov 4 '25", 7426, 842, 393, 216, 609, 25, 326, 327],
+  ["Nov 11 '25", 7719, 876, 367, 134, 501, 27, 311, 294],
+  ["Nov 18 '25", 8401, 815, 336, 134, 470, 23, 325, 330],
+  ["Nov 25 '25", 4766, 849, 364, 228, 592, 16, 269, 292],
+  ["Dec 2 '25", 4213, 682, 276, 171, 447, 17, 228, 256],
+  ["Dec 10 '25", 2071, 623, 164, 170, 334, 22, 250, 259],
+  ["Dec 17 '25", 3501, 701, 232, 89, 321, null, null, null],
+  ["Jan 7 '26", 20, 273, 53, 7, 60, null, null, null],
+  ["Jan 14 '26", 1650, 502, 164, 26, 190, null, null, null],
+  ["Jan 21 '26", 1599, 589, 149, 62, 211, null, null, null],
+  ["Jan 28 '26", 1535, 460, 158, 51, 209, 13, 154, 161],
+  ["Feb 4 '26", 1082, 482, 105, 59, 164, 14, 203, 188],
+  ["Feb 10 '26", 2254, 510, 149, 33, 182, 12, 180, 170],
+  ["Mar 3 '26", 2695, 600, 183, 47, 230, null, null, null],
+  ["Mar 10 '26", 2329, 600, 196, 64, 260, null, null, null],
+  ["Mar 17 '26", 2044, 603, 212, 66, 278, 142, 42, 237],
+  ["Mar 24 '26", 3032, 611, 195, 74, 269, 147, 48, 265],
+  ["Mar 31 '26", 3774, 712, 268, 104, 372, 155, 43, 265],
+  ["Apr 7 '26", 6333, 776, 268, 75, 343, 157, 52, 252],
+  ["Apr 16 '26", 4618, 769, 268, 139, 407, 178, 52, 284],
+  ["Apr 23 '26", 7665, 917, 350, 136, 486, null, null, null],
+  ["Apr 30 '26", 6588, 879, 347, 104, 451, null, null, null],
+  ["May 7 '26", 7932, 988, 346, 219, 565, 31, 289, 314],
+  ["May 14 '26", 11077, 1062, 382, 160, 542, null, null, null],
+  ["May 20 '26", 15818, 1010, 498, 246, 744, null, null, null],
+  ["May 27 '26", 14242, 1066, 417, 260, 677, null, null, null],
+  ["Jun 3 '26", 16980, 988, 385, 248, 633, null, null, null]
+];
+
+const labels  = RAW.map(r => r[0]);
+const lmData  = RAW.map(r => r[1]);
+const eqData  = RAW.map(r => r[2]);
+const autoData= RAW.map(r => r[3]);
+const manData = RAW.map(r => r[4]);
+const totData = RAW.map(r => r[5]);
+const mobData = RAW.map(r => r[6]);
+const webData = RAW.map(r => r[7]);
+const mauData = RAW.map(r => r[8]);
+
+// ── Stat cards ───────────────────────────────────────────────────────────────
+function fmt(n) { return n == null ? '—' : n.toLocaleString(); }
+function pct(a, b) {
+  if (!b || b === 0) return null;
+  return ((a - b) / b * 100).toFixed(1);
+}
+function renderStat(valId, changeId, cur, prev) {
+  document.getElementById(valId).textContent = fmt(cur);
+  const el = document.getElementById(changeId);
+  const p = pct(cur, prev);
+  if (p === null) { el.textContent = ''; return; }
+  const up = parseFloat(p) >= 0;
+  el.className = 'stat-change ' + (up ? 'up' : 'down');
+  el.innerHTML = (up ? '↑' : '↓') + ' ' + Math.abs(p) + '% <span class="change-sub">vs prev week</span>';
+}
+
+const last = RAW[RAW.length - 1];
+const prev = RAW[RAW.length - 2];
+renderStat('v-lm',  'c-lm',  last[1], prev[1]);
+renderStat('v-eq',  'c-eq',  last[2], prev[2]);
+renderStat('v-rp',  'c-rp',  last[5], prev[5]);
+
+// MAU: find most recent non-null pair
+let mauCur = null, mauPrev = null;
+for (let i = RAW.length - 1; i >= 0; i--) {
+  if (RAW[i][8] !== null) {
+    if (mauCur === null) { mauCur = RAW[i][8]; }
+    else { mauPrev = RAW[i][8]; break; }
+  }
+}
+renderStat('v-mau', 'c-mau', mauCur, mauPrev);
+
+// ── Shared chart defaults ─────────────────────────────────────────────────────
+const TICK = { color: '#9CA3AF', font: { size: 11, family: "'IBM Plex Sans', sans-serif" } };
+const GRID = { color: '#F0F1F3', lineWidth: 1 };
+
+function baseOpts(yFmt) {
+  return {
+    responsive: true,
+    maintainAspectRatio: true,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#1F2937',
+        titleColor: '#F3F4F6',
+        bodyColor: '#D1D5DB',
+        borderColor: '#374151',
+        borderWidth: 1,
+        padding: 10,
+        cornerRadius: 6,
+        titleFont: { family: "'IBM Plex Sans', sans-serif", size: 12 },
+        bodyFont:  { family: "'IBM Plex Sans', sans-serif", size: 12 },
+        callbacks: {
+          label: ctx => ctx.raw == null ? null
+            : ` ${ctx.dataset.label}: ${ctx.raw.toLocaleString()}`
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        border: { display: false },
+        ticks: { ...TICK, maxTicksLimit: 10, maxRotation: 0 }
+      },
+      y: {
+        grid: GRID,
+        border: { display: false },
+        ticks: {
+          ...TICK,
+          callback: v => yFmt ? yFmt(v) : v.toLocaleString()
+        }
+      }
+    }
+  };
+}
+
+// ── Lane Miles chart ──────────────────────────────────────────────────────────
+(function() {
+  const ctx = document.getElementById('lmChart').getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, 260);
+  grad.addColorStop(0, 'rgba(29,78,216,0.18)');
+  grad.addColorStop(1, 'rgba(29,78,216,0)');
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Lane Miles',
+        data: lmData,
+        borderColor: '#1D4ED8',
+        borderWidth: 2,
+        backgroundColor: grad,
+        fill: true,
+        tension: 0.35,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHoverBackgroundColor: '#1D4ED8',
+        pointHoverBorderColor: '#fff',
+        pointHoverBorderWidth: 2,
+      }]
+    },
+    options: {
+      ...baseOpts(v => v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v),
+    }
+  });
+})();
+
+// ── Reports chart (stacked bar) ───────────────────────────────────────────────
+new Chart(document.getElementById('rpChart'), {
+  type: 'bar',
+  data: {
+    labels,
+    datasets: [
+      {
+        label: 'Automated',
+        data: autoData,
+        backgroundColor: 'rgba(16,185,129,0.75)',
+        borderColor: '#10B981',
+        borderWidth: 0,
+        borderRadius: { topLeft: 0, topRight: 0, bottomLeft: 2, bottomRight: 2 },
+        borderSkipped: false,
+      },
+      {
+        label: 'Manual',
+        data: manData,
+        backgroundColor: 'rgba(245,158,11,0.75)',
+        borderColor: '#F59E0B',
+        borderWidth: 0,
+        borderRadius: { topLeft: 2, topRight: 2, bottomLeft: 0, bottomRight: 0 },
+        borderSkipped: false,
+      }
+    ]
+  },
+  options: {
+    ...baseOpts(),
+    scales: {
+      x: {
+        stacked: true,
+        grid: { display: false },
+        border: { display: false },
+        ticks: { ...TICK, maxTicksLimit: 8, maxRotation: 0 }
+      },
+      y: {
+        stacked: true,
+        grid: GRID,
+        border: { display: false },
+        ticks: TICK
+      }
+    }
+  }
+});
+
+// ── Equipment chart ───────────────────────────────────────────────────────────
+(function() {
+  const ctx = document.getElementById('eqChart').getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, 280);
+  grad.addColorStop(0, 'rgba(79,70,229,0.12)');
+  grad.addColorStop(1, 'rgba(79,70,229,0)');
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Equipment',
+        data: eqData,
+        borderColor: '#4F46E5',
+        borderWidth: 2,
+        backgroundColor: grad,
+        fill: true,
+        tension: 0.35,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHoverBackgroundColor: '#4F46E5',
+        pointHoverBorderColor: '#fff',
+        pointHoverBorderWidth: 2,
+      }]
+    },
+    options: baseOpts()
+  });
+})();
+
+// ── Users chart ───────────────────────────────────────────────────────────────
+new Chart(document.getElementById('usChart'), {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [
+      {
+        label: 'MAU',
+        data: mauData,
+        borderColor: '#7C3AED',
+        borderWidth: 2,
+        backgroundColor: 'transparent',
+        tension: 0.35,
+        spanGaps: false,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHoverBackgroundColor: '#7C3AED',
+        pointHoverBorderColor: '#fff',
+        pointHoverBorderWidth: 2,
+      },
+      {
+        label: 'Web',
+        data: webData,
+        borderColor: '#0891B2',
+        borderWidth: 2,
+        backgroundColor: 'transparent',
+        tension: 0.35,
+        spanGaps: false,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHoverBackgroundColor: '#0891B2',
+        pointHoverBorderColor: '#fff',
+        pointHoverBorderWidth: 2,
+      },
+      {
+        label: 'Mobile',
+        data: mobData,
+        borderColor: '#DB2777',
+        borderWidth: 2,
+        backgroundColor: 'transparent',
+        tension: 0.35,
+        spanGaps: false,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHoverBackgroundColor: '#DB2777',
+        pointHoverBorderColor: '#fff',
+        pointHoverBorderWidth: 2,
+      }
+    ]
+  },
+  options: baseOpts()
+});
+</script>
+</body>
+</html>
