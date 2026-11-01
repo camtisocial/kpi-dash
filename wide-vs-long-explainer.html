@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wide vs. Long — what a chart can and can't compare</title>
+<style>
+  :root{
+    --green:#15803d; --green-bg:#dcfce7; --green-border:#22c55e;
+    --red:#b91c1c;   --red-bg:#fee2e2;   --red-border:#ef4444;
+    --ink:#1e293b;   --muted:#64748b;    --line:#cbd5e1;
+  }
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink); max-width:780px; margin:40px auto; padding:0 20px; line-height:1.55;
+  }
+  h1{font-size:1.5rem;} h2{font-size:1.15rem; margin-top:2.2rem;}
+  table{border-collapse:collapse; margin:18px 0; font-variant-numeric:tabular-nums;}
+  th,td{border:1px solid var(--line); padding:8px 16px; text-align:right;}
+  th:first-child,td:first-child{text-align:left;}
+  thead th{background:#f1f5f9;}
+  caption{caption-side:top; text-align:left; font-weight:600; margin-bottom:6px;}
+
+  /* highlight styles */
+  .ok      {background:var(--green-bg); color:var(--green); font-weight:600;}
+  .ok-head {background:var(--green-bg); color:var(--green); border:2px solid var(--green-border);}
+  .bad-head{background:var(--red-bg);   color:var(--red);   border:2px solid var(--red-border); font-weight:700;}
+
+  .legend{display:flex; gap:22px; flex-wrap:wrap; margin:10px 0 4px;}
+  .chip{display:inline-flex; align-items:center; gap:8px; font-size:.9rem;}
+  .sw{width:16px; height:16px; border-radius:3px; display:inline-block;}
+  .sw.g{background:var(--green-bg); border:2px solid var(--green-border);}
+  .sw.r{background:var(--red-bg);   border:2px solid var(--red-border);}
+
+  .note{font-size:.92rem; color:var(--muted);}
+  .green-txt{color:var(--green); font-weight:600;}
+  .red-txt{color:var(--red); font-weight:600;}
+  .arrow{font-size:.85rem; color:var(--muted);}
+</style>
+</head>
+<body>
+
+<h1>Wide vs. Long: which comparisons a chart can actually make</h1>
+<p class="note">Same KPI — weekly markings, split automated vs. manual. The color shows
+<span class="green-txt">what a chart can compare</span> and
+<span class="red-txt">what it cannot</span> from each table shape.</p>
+
+<div class="legend">
+  <span class="chip"><span class="sw g"></span> Works — a chart can compare these</span>
+  <span class="chip"><span class="sw r"></span> Impossible — the chart can't group on this</span>
+</div>
+
+<h2>WIDE table (your source data)</h2>
+<table>
+  <caption>One row per week · each metric is its own column</caption>
+  <thead>
+    <tr>
+      <th>week</th>
+      <th class="bad-head">automated</th>
+      <th class="bad-head">manual</th>
+      <th>total</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>2026-W01</td><td class="ok">120</td><td class="ok">30</td><td>150</td></tr>
+    <tr><td>2026-W02</td><td class="ok">140</td><td class="ok">25</td><td>165</td></tr>
+    <tr><td>2026-W03</td><td class="ok">155</td><td class="ok">20</td><td>175</td></tr>
+    <tr><td>2026-W04</td><td class="ok">170</td><td class="ok">18</td><td>188</td></tr>
+  </tbody>
+</table>
+
+<p>
+  <span class="green-txt">GREEN — works.</span>
+  Reading the numbers <em>down a column</em> (120 → 140 → 155 → 170) gives a
+  <strong>trend over time</strong>. Plotting the automated column against the manual
+  column as two lines over the shared <code>week</code> axis also works — each column
+  is already its own ready-made series.
+</p>
+<p>
+  <span class="red-txt">RED — impossible.</span>
+  The headers <code>automated</code> and <code>manual</code> are
+  <strong>structure, not data.</strong> To draw a donut you'd have to
+  <em>group by</em> them as if they were one category — but there is no column whose
+  <em>values</em> are "automated"/"manual". A chart can only group on values
+  <em>inside</em> a column, and here they're column <em>names</em>. So:
+  <strong>no donut, no share %, no stacked breakdown</strong> from this shape.
+</p>
+
+<h2>LONG table (reshaped — the fix)</h2>
+<table>
+  <caption>One row per value · the category is now a real column you can group on</caption>
+  <thead>
+    <tr>
+      <th>week</th>
+      <th class="ok-head">type</th>
+      <th>value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>2026-W01</td><td class="ok">automated</td><td>120</td></tr>
+    <tr><td>2026-W01</td><td class="ok">manual</td><td>30</td></tr>
+    <tr><td>2026-W02</td><td class="ok">automated</td><td>140</td></tr>
+    <tr><td>2026-W02</td><td class="ok">manual</td><td>25</td></tr>
+    <tr><td>2026-W03</td><td class="ok">automated</td><td>155</td></tr>
+    <tr><td>2026-W03</td><td class="ok">manual</td><td>20</td></tr>
+  </tbody>
+</table>
+
+<p>
+  <span class="green-txt">GREEN — now possible.</span>
+  The exact same labels <code>automated</code> / <code>manual</code> have moved
+  <em>out of the headers and into the <code>type</code> column as values.</em>
+  Because they're values now, a chart can <strong>group by <code>type</code></strong> —
+  which is precisely what a donut, pie, or stacked bar needs.
+</p>
+
+<p class="note">
+  <strong>The whole rule in one line:</strong> a chart can only compare things stored
+  as <span class="green-txt">values inside a column</span>, never things stored as
+  <span class="red-txt">column headers</span>. Reshaping wide → long just moves your
+  category from the header row down into a column so it becomes groupable.
+</p>
+
+</body>
+</html>
